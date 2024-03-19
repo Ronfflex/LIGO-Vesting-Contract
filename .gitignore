@@ -1,0 +1,5 @@
+.ligo
+compiled
+deploy/node_modules
+_ligo
+ligo.esy.lock

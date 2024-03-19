@@ -1,5 +1,6 @@
 .ligo
 compiled
-deploy/node_modules
+node_modules/
 _ligo
 ligo.esy.lock
+package-lock.json

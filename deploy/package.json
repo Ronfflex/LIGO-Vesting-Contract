@@ -21,6 +21,7 @@
     "@taquito/utils": "^19.1.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.2",
+    "dotenv": "^16.4.5"
   }
 }

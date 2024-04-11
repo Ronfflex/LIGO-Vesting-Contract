@@ -17,7 +17,6 @@ install = $(LIGO) install
 test = @$(LIGO) run test $(project_root) ./test/$(1)
 # ^ run given test file
 
-
 .PHONY: test compile
 compile: ## compile contracts to Michelson
 	@mkdir -p compiled

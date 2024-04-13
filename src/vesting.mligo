@@ -38,8 +38,8 @@ module C = struct
 
   [@entry] 
   let deposit (amount_: nat) (store: storage) : result =
-    let _ = assert_with_error(Tezos.get_sender() = store.admin) Errors.not_admin in
-    let _ = assert_with_error(store.vesting_has_started = false) Errors.vesting_already_started in
+    let _ = Assert.Error.assert(Tezos.get_sender() = store.admin) Errors.not_admin in
+    let _ = Assert.Error.assert(store.vesting_has_started = false) Errors.vesting_already_started in
 
     let transfer_requests = ([
       ({
@@ -54,7 +54,7 @@ module C = struct
       });
     ]: FA2.SingleAssetExtendable.TZIP12.transfer) in
     let transfer: FA2.SingleAssetExtendable.TZIP12.transfer contract = get_entrypoint(store.token_address, "transfer") in
-    let op = Tezos.transaction transfer_requests 0mutez transfer in
+    let op = Tezos.Next.Operation.transaction transfer_requests 0mutez transfer in
     let old_balance = match Big_map.find_opt(Tezos.get_sender()) store.beneficiaries with
         |Some l -> l
         |None -> 0n
@@ -63,9 +63,9 @@ module C = struct
 
   [@entry]
   let start (_: nat) (store: storage): result =
-    let _ = assert_with_error(Tezos.get_sender() = store.admin) Errors.not_admin in
-    let _ = assert_with_error(store.vesting_has_started = false) Errors.vesting_already_started in
-    let _ = assert_with_error(Tezos.get_now() >= store.end_vesting) Errors.vesting_period_ended in
+    let _ = Assert.Error.assert(Tezos.get_sender() = store.admin) Errors.not_admin in
+    let _ = Assert.Error.assert(store.vesting_has_started = false) Errors.vesting_already_started in
+    let _ = Assert.Error.assert(Tezos.get_now() >= store.end_vesting) Errors.vesting_period_ended in
 
     let transfer_requests = ([
       ({
@@ -80,20 +80,20 @@ module C = struct
         });
     ]: FA2.SingleAssetExtendable.TZIP12.transfer) in
     let transfer: FA2.SingleAssetExtendable.TZIP12.transfer contract = get_entrypoint(store.token_address, "transfer") in
-    let op = Tezos.transaction transfer_requests 0mutez transfer in
+    let op = Tezos.Next.Operation.transaction transfer_requests 0mutez transfer in
     let store = { store with start_freeze_period = Tezos.get_now()} in
     let store = { store with vesting_has_started = true} in
     [op], store
 
   [@entry] 
   let claim (amount_: nat) (store: storage): result =
-    let _ = assert_with_error(store.vesting_has_started = true) Errors.vesting_hasnt_started in
-    let _ = assert_with_error(Tezos.get_now() >= store.start_claim_period) Errors.claim_hasnt_started in
+    let _ = Assert.Error.assert(store.vesting_has_started = true) Errors.vesting_hasnt_started in
+    let _ = Assert.Error.assert(Tezos.get_now() >= store.start_claim_period) Errors.claim_hasnt_started in
     let current_balance = match Big_map.find_opt(Tezos.get_sender()) store.beneficiaries with
         |Some l -> l
         |None -> 0n
     in
-    let _ = assert_with_error(amount_ <= current_balance) Errors.insufficient_balance in
+    let _ = Assert.Error.assert(amount_ <= current_balance) Errors.insufficient_balance in
     let transfer_requests = ([
       ({
           from_ = Tezos.get_sender();
@@ -107,7 +107,7 @@ module C = struct
         });
     ]: FA2.SingleAssetExtendable.TZIP12.transfer) in
     let transfer: FA2.SingleAssetExtendable.TZIP12.transfer contract = get_entrypoint(store.token_address, "transfer") in
-    let op = Tezos.transaction transfer_requests 0mutez transfer in
+    let op = Tezos.Next.Operation.transaction transfer_requests 0mutez transfer in
     [op], {store with beneficiaries = updateValue(store.beneficiaries, (Tezos.get_sender()), abs(current_balance - amount_))}
 
 end

@@ -20,7 +20,8 @@ test = @$(LIGO) run test $(project_root) ./test/$(1)
 .PHONY: test compile
 compile: ## compile contracts to Michelson
 	@mkdir -p compiled
-	@$(call compile,Vesting.mligo,Vesting.mligo.json, -m C --michelson-format json)
+	@$(call compile,vesting.mligo,Vesting.mligo.json, -m C --michelson-format json)
+	@$(call compile,Token.mligo,Token.mligo.json, -m T --michelson-format json)
 
 
 test: ## run tests (SUITE=asset_approve make test)
@@ -35,7 +36,7 @@ install: ## install dependencies
 	@$(call install)
 
 
-deploy: deploy_deps deploy.js
+deploy: deploy_deps vesting.js
 
 deploy.js:
 	@echo "Running deploy script\n"

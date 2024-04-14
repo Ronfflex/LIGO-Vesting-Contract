@@ -3,6 +3,8 @@
 module C = struct
   type beneficiaries = (address, nat) big_map
 
+  type vesting_status = Vesting_hasnt_started | Vesting_has_started | Vesting_has_ended
+
   type storage = {
     beneficiaries: beneficiaries;
     admin: address;
@@ -11,7 +13,7 @@ module C = struct
     start_freeze_period: timestamp;
     start_claim_period: timestamp;
     end_vesting: timestamp;
-    vesting_has_started: bool;
+    vesting_status: vesting_status;
     total_promised_amount: nat;
   }
 
@@ -28,6 +30,7 @@ module C = struct
     let entrypoint_not_found = "ENTRYPOINT_NOT_FOUND"
     let transfer_failed = "TRANSFER_FAILED"
     let insufficient_balance = "INSUFFICIENT_BALANCE"
+    let beneficiary_already_added = "BENEFICIARY_ALREADY_ADDED"
   end
 
   let updateValue(m, key, value: beneficiaries * address * nat): beneficiaries = Big_map.update key (Some value) m
@@ -35,15 +38,15 @@ module C = struct
   let get_entrypoint(addr, name: address * string) = 
       if name = "transfer" then
           match Tezos.get_entrypoint_opt "%transfer" addr with
-              | Some contract -> contract
-              | None -> failwith Errors.transfer_failed
+            | Some contract -> contract
+            | None -> failwith Errors.transfer_failed
       else
           failwith Errors.entrypoint_not_found
 
   [@entry]
   let start (amount_: nat) (store: storage): result =
     let _ = Assert.Error.assert(Tezos.get_sender() = store.admin) Errors.not_admin in
-    let _ = Assert.Error.assert(store.vesting_has_started = false) Errors.vesting_already_started in
+    let _ = Assert.Error.assert(store.vesting_status = Vesting_hasnt_started) Errors.vesting_already_started in
     let _ = Assert.Error.assert(Tezos.get_now() >= store.end_vesting) Errors.vesting_period_ended in
     let _ = Assert.Error.assert(amount_ >= store.total_promised_amount) Errors.insufficient_fund in
 
@@ -67,13 +70,13 @@ module C = struct
     in
   
     let store = { store with start_freeze_period = Tezos.get_now()} in
-    let store = { store with vesting_has_started = true} in
+    let store = { store with vesting_status = Vesting_has_started} in
     let store = { store with beneficiaries = updateValue(store.beneficiaries, (Tezos.get_sender()), amount_ + old_balance)} in
     [op], store
 
   [@entry] 
   let claim (amount_: nat) (store: storage): result =
-    let _ = Assert.Error.assert(store.vesting_has_started = true) Errors.vesting_hasnt_started in
+    let _ = Assert.Error.assert(store.vesting_status = Vesting_has_started) Errors.vesting_hasnt_started in
     let _ = Assert.Error.assert(Tezos.get_now() >= store.start_claim_period) Errors.claim_hasnt_started in
 
     let store = if store.total_promised_amount = 0n then { store with end_vesting = Tezos.get_now()} else store in
@@ -102,4 +105,14 @@ module C = struct
     let store = { store with beneficiaries = updateValue(store.beneficiaries, (Tezos.get_sender()), abs(current_balance - amount_))} in
     let store = { store with total_promised_amount = abs(store.total_promised_amount - amount_)} in
     [op], store
+
+  [@entry]
+  let addBeneficiary (beneficiary, amount_: address * nat) (store : storage) : result =
+    let _ = Assert.Error.assert(Tezos.get_sender() = store.admin) Errors.not_admin in
+    let _ = Assert.Error.assert(store.vesting_status = Vesting_hasnt_started) Errors.vesting_already_started in
+    let _ = Assert.Error.assert(not (Big_map.mem beneficiary store.beneficiaries)) Errors.beneficiary_already_added in
+
+    let beneficiaries = Big_map.add beneficiary amount_ store.beneficiaries in
+    let store = {store with beneficiaries = beneficiaries} in
+    [], store
 end

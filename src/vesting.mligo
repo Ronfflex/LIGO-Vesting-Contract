@@ -114,5 +114,6 @@ module C = struct
 
     let beneficiaries = Big_map.add beneficiary amount_ store.beneficiaries in
     let store = {store with beneficiaries = beneficiaries} in
+    let store = {store with total_promised_amount = store.total_promised_amount + amount_} in
     [], store
 end

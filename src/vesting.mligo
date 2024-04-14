@@ -12,7 +12,7 @@ module C = struct
     start_claim_period: timestamp;
     end_vesting: timestamp;
     vesting_has_started: bool;
-    total_promised_amount : nat;
+    total_promised_amount: nat;
   }
 
   type result = operation list * storage
@@ -75,11 +75,16 @@ module C = struct
   let claim (amount_: nat) (store: storage): result =
     let _ = Assert.Error.assert(store.vesting_has_started = true) Errors.vesting_hasnt_started in
     let _ = Assert.Error.assert(Tezos.get_now() >= store.start_claim_period) Errors.claim_hasnt_started in
+
+    let store = if store.total_promised_amount = 0n then { store with end_vesting = Tezos.get_now()} else store in
+    let _ = Assert.Error.assert(Tezos.get_now() < store.end_vesting) Errors.vesting_period_ended in
+
     let current_balance = match Big_map.find_opt(Tezos.get_sender()) store.beneficiaries with
         |Some l -> l
         |None -> 0n
     in
     let _ = Assert.Error.assert(amount_ <= current_balance) Errors.insufficient_balance in
+
     let transfer_requests = ([
       ({
           from_ = Tezos.get_self_address();

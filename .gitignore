@@ -5,3 +5,5 @@ _ligo
 ligo.esy.lock
 package-lock.json
 .env
+repository_id
+user_id

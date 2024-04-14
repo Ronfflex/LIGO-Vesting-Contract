@@ -52,15 +52,24 @@ function DeployVesting(token_address, token_id) {
         }
         const Tezos = new taquito_1.TezosToolkit(RPC_ENDPOINT);
         Tezos.setProvider({ signer: yield signer_1.InMemorySigner.fromSecretKey(PRIVATE_KEY) });
+        const beneficiaries = taquito_1.MichelsonMap.fromLiteral({
+            tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN: 1000,
+            tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwQ: 2000,
+            tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwA: 3000,
+        });
+        var total_promised_amount = 0;
+        for (const value of beneficiaries.values()) {
+            total_promised_amount += value;
+        }
         const storage = {
-            beneficiaries: taquito_1.MichelsonMap.fromLiteral({}),
+            beneficiaries: beneficiaries,
             admin: ADMIN_ADDRESS,
             token_address: token_address,
             token_id: token_id,
             start_freeze_period: new Date("2022-01-01T00:00:00Z"),
             start_claim_period: new Date("2023-01-01T00:00:00Z"),
             end_vesting: new Date("2024-01-01T00:00:00Z"),
-            total_promised_amount: 0
+            total_promised_amount: total_promised_amount,
         };
         // check dates are valid
         if (storage.start_freeze_period.getTime() >= storage.start_claim_period.getTime()) {
@@ -73,6 +82,10 @@ function DeployVesting(token_address, token_id) {
         }
         if (storage.end_vesting.getTime() <= new Date().getTime()) {
             console.error("end_vesting should be in the future");
+            return;
+        }
+        if (total_promised_amount <= 0) {
+            console.error("total_promised_amount should be greater than 0");
             return;
         }
         try {
@@ -90,4 +103,3 @@ function DeployVesting(token_address, token_id) {
     });
 }
 exports.DeployVesting = DeployVesting;
-//# sourceMappingURL=vesting.js.map

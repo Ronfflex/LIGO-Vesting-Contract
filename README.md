@@ -44,7 +44,11 @@ docker run --platform linux/amd64 -u $(id -u):$(id -g) --rm -v "$(PWD)":"$(PWD)"
 If you're using a macOS system with the M3 chip (like me :sad:), the Makefile may not work as expected due to compatibility issues. In this case, you can follow the manual deployment steps below.
 
 ### Manual Deployment
-
+0. Create directory *compiled*
+   ```
+   mkdir compiled
+   ```
+   
 1. Compile the contracts:
    ```
    ligo compile contract --project-root ./src ./src/vesting.mligo -o ./compiled/Vesting.mligo.json -m C --michelson-format json

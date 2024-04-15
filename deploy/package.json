@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "deploy": "tsc && node deploy.js"
+    "deploy": "tsc && node deploy.js",
+    "deploy_token": "tsc && node deploy_token.js"
   },
   "repository": {
     "type": "git",
